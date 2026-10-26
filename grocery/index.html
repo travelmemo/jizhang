@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="買菜記帳">
+<meta name="theme-color" content="#eef1f6">
+<title>阿母買菜記帳</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap">
+<style>
+/* 版面：一個畫面的 APP，上面對話、下面固定一顆大麥克風；字一律放大給長輩看 */
+:root {
+  --bg: #eef1f6;          /* 淡藍灰底 */
+  --paper: #ffffff;       /* 機器人泡泡、卡片 */
+  --ink: #18212e;         /* 主要文字 */
+  --muted: #566274;       /* 次要文字 */
+  --line: #d3d9e3;
+  --ai: #23407a;          /* 藍：使用者泡泡、選取 */
+  --ai-ink: #ffffff;
+  --mic: #cf3b22;         /* 朱紅：麥克風 */
+  --mic-ink: #ffffff;
+  --yes: #1d7a4c;
+  --no: #b3261e;
+  --tint: #e2e8f3;
+  --font: "Noto Sans TC", "PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11161f; --paper: #1b2330; --ink: #eef2f7; --muted: #a3afc0; --line: #2d3848;
+    --ai: #5d85d6; --ai-ink: #0c1220; --mic: #f06a4f; --mic-ink: #1a0c08;
+    --yes: #4cc48a; --no: #f2867d; --tint: #232d3d; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font);
+  font-size: 20px; line-height: 1.5; -webkit-text-size-adjust: 100%;
+  font-variant-numeric: tabular-nums;
+}
+button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--ai); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.app {
+  height: 100%; display: flex; flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+  max-width: 640px; margin: 0 auto;
+}
+.gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px 8px; }
+header h1 { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: .04em; }
+.owner {
+  border: 2px solid var(--line); background: var(--paper); border-radius: 999px;
+  padding: 6px 16px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;
+}
+.owner small { color: var(--muted); font-weight: 500; font-size: 15px; }
+
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-block: 4px 10px; }
+.tabs button {
+  border: 0; border-radius: 14px; padding: 12px 8px; font-size: 21px; font-weight: 700;
+  background: var(--tint); color: var(--muted); position: relative;
+}
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.badge { display: inline-block; min-width: 1.4em; margin-left: 6px; font-size: 15px; border-radius: 999px; background: var(--mic); color: var(--mic-ink); padding: 0 6px; }
+.badge:empty { display: none; }
+
+/* ---- 對話 ---- */
+#view-talk { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#chat { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-block: 8px 12px; -webkit-overflow-scrolling: touch; }
+.msg { max-width: 86%; padding: 12px 16px; border-radius: 20px; font-size: 22px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.msg.bot { align-self: flex-start; background: var(--paper); border: 2px solid var(--line); border-bottom-left-radius: 6px; }
+.msg.me { align-self: flex-end; background: var(--ai); color: var(--ai-ink); border-bottom-right-radius: 6px; font-weight: 700; }
+.msg.me.tap { opacity: .85; font-weight: 500; }
+.msg.me.live { opacity: .6; }
+.card { width: 86%; display: flex; flex-direction: column; gap: 4px; white-space: normal; }
+.cd-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 17px; color: var(--muted); }
+.cd-item { font-size: 26px; font-weight: 900; }
+.cd-amt { font-size: 34px; font-weight: 900; letter-spacing: .01em; }
+.cd-row { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding-top: 6px; font-size: 19px; }
+.cd-row span { color: var(--muted); flex: none; }
+.cd-row b { text-align: right; }
+.cd-q { font-weight: 700; margin-top: 6px; }
+.cat { display: inline-block; font-size: 15px; font-weight: 700; padding: 1px 10px; border-radius: 999px; background: var(--tint); color: var(--ink); }
+.cat.sm { font-size: 13px; padding: 0 8px; margin-right: 8px; vertical-align: 2px; }
+
+#chips { display: flex; flex-wrap: wrap; gap: 10px; padding-block: 0 10px; }
+#chips:empty { display: none; }
+.chip { border: 2px solid var(--ai); background: var(--paper); color: var(--ai); border-radius: 16px; padding: 10px 18px; font-size: 21px; font-weight: 700; min-height: 54px; }
+.chip.strong { background: var(--ai); color: var(--ai-ink); }
+.chip.on { background: var(--ai); color: var(--ai-ink); }
+.chip.yes { background: var(--yes); border-color: var(--yes); color: #fff; flex: 1 1 60%; font-size: 24px; min-height: 64px; }
+.chip.no { border-color: var(--no); color: var(--no); flex: 1 1 30%; font-size: 24px; min-height: 64px; }
+.chip.quiet { border-color: var(--line); color: var(--muted); }
+
+.dock { border-top: 2px solid var(--line); background: var(--bg); padding-block: 14px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+#mic {
+  width: 100%; min-height: 96px; border: 0; border-radius: 28px; background: var(--mic); color: var(--mic-ink);
+  display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 28px; font-weight: 900; letter-spacing: .06em;
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--mic) 60%, #000);
+  transition: transform .1s;
+}
+#mic:active { transform: translateY(3px); box-shadow: 0 3px 0 color-mix(in srgb, var(--mic) 60%, #000); }
+#mic svg { width: 44px; height: 44px; flex: none; }
+#mic.on { animation: pulse 1.2s ease-in-out infinite; }
+#mic.prep { filter: saturate(.35) brightness(.95); }
+@keyframes pulse { 50% { filter: brightness(1.18); } }
+@media (prefers-reduced-motion: reduce) { #mic.on { animation: none; outline: 4px solid var(--ink); } }
+#typeForm { width: 100%; display: flex; gap: 8px; }
+#typeBox { flex: 1; min-width: 0; font: inherit; font-size: 18px; padding: 10px 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--paper); color: var(--ink); }
+#typeForm button { border: 2px solid var(--line); background: var(--paper); border-radius: 14px; padding: 0 16px; font-size: 18px; font-weight: 700; }
+
+/* ---- 帳本 ---- */
+#view-book { flex: 1; overflow-y: auto; padding-block: 4px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.sec-h { font-size: 22px; margin: 18px 0 8px; font-weight: 900; }
+.sum-block { background: var(--paper); border: 2px solid var(--line); border-radius: 18px; padding: 12px 16px; margin-bottom: 12px; }
+.sum-block h3 { margin: 0 0 6px; font-size: 18px; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-size: 20px; }
+th { text-align: right; color: var(--muted); font-weight: 500; font-size: 15px; padding: 4px 0; }
+th:first-child, td:first-child { text-align: left; }
+td { text-align: right; padding: 6px 0; border-top: 1px solid var(--line); font-weight: 700; }
+.settle { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.settle li { background: var(--tint); border-radius: 12px; padding: 8px 12px; font-size: 20px; }
+.even { margin: 8px 0 0; color: var(--muted); }
+.day { font-size: 17px; color: var(--muted); margin: 16px 0 6px; font-weight: 700; }
+.entry { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "main amt" "main del"; gap: 2px 12px; background: var(--paper); border: 2px solid var(--line); border-radius: 16px; padding: 10px 14px; margin-bottom: 8px; }
+.e-main { grid-area: main; min-width: 0; }
+.e-item { font-size: 21px; font-weight: 700; }
+.e-meta { font-size: 16px; color: var(--muted); }
+.e-amt { grid-area: amt; text-align: right; font-size: 21px; font-weight: 900; }
+.e-acts { grid-area: del; justify-self: end; display: flex; gap: 8px; }
+.e-acts button { border: 2px solid var(--line); background: transparent; border-radius: 12px; padding: 4px 14px; font-size: 17px; color: var(--muted); min-height: 40px; }
+.e-acts .e-edit { border-color: var(--ai); color: var(--ai); font-weight: 700; }
+.e-del.armed { border-color: var(--no); color: var(--no); font-weight: 700; }
+
+.search { position: sticky; top: 0; z-index: 5; background: var(--bg); display: flex; align-items: center; gap: 8px; padding-block: 4px 10px; }
+.search svg { position: absolute; left: 14px; width: 22px; height: 22px; color: var(--muted); pointer-events: none; }
+#searchBox { flex: 1; min-width: 0; font: inherit; font-size: 19px; padding: 12px 14px 12px 44px; border-radius: 16px; border: 2px solid var(--line); background: var(--paper); color: var(--ink); -webkit-appearance: none; appearance: none; }
+#searchClear { border: 2px solid var(--line); background: var(--paper); border-radius: 14px; padding: 0 14px; min-height: 50px; font-size: 17px; font-weight: 700; color: var(--muted); }
+.found { margin: 4px 0 0; font-weight: 700; color: var(--ai); }
+
+.entry.editing { display: flex; flex-direction: column; gap: 12px; border-color: var(--ai); padding: 14px; }
+.fld { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.fld > span { font-size: 15px; color: var(--muted); font-weight: 700; }
+.fld.narrow { flex: 0 0 7.5em; }
+.fld-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.fld input, .fld select { font: inherit; font-size: 20px; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; min-width: 0; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.pick { border: 2px solid var(--ai); background: var(--paper); color: var(--ai); border-radius: 14px; padding: 8px 16px; font-size: 20px; font-weight: 700; min-height: 48px; }
+.pick.on { background: var(--ai); color: var(--ai-ink); }
+.ed-err { margin: 0; color: var(--no); font-weight: 700; }
+.ed-acts { display: flex; gap: 10px; }
+.ed-save { flex: 2; border: 0; border-radius: 14px; background: var(--yes); color: #fff; font-size: 22px; font-weight: 900; min-height: 56px; }
+.ed-cancel { flex: 1; border: 2px solid var(--line); background: transparent; border-radius: 14px; font-size: 20px; color: var(--muted); min-height: 56px; }
+.empty { color: var(--muted); }
+.share { width: 100%; border: 0; border-radius: 18px; background: var(--ai); color: var(--ai-ink); font-size: 22px; font-weight: 900; padding: 16px; margin-top: 8px; }
+#copyBox { width: 100%; height: 140px; margin-top: 10px; font-size: 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--paper); color: var(--ink); padding: 8px; }
+.setting { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 18px; background: var(--paper); border: 2px solid var(--line); border-radius: 16px; padding: 10px 14px; }
+.setting select { font: inherit; font-size: 19px; padding: 6px 10px; border-radius: 10px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); }
+.hint { font-size: 15px; color: var(--muted); margin-top: 18px; }
+
+#flash { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); border-radius: 14px; padding: 12px 16px; font-size: 19px; text-align: center; z-index: 20; }
+
+#exportSheet { position: fixed; inset: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 92%, transparent); display: flex; align-items: flex-end; justify-content: center; padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.sheet.export { max-width: 560px; max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.sheet.export h2 { margin: 0; }
+.range-list { display: flex; flex-wrap: wrap; gap: 10px; }
+.pv-h { margin: 4px 0 0 !important; font-size: 16px !important; }
+#exportPreview { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font); font-size: 16px; line-height: 1.55; background: var(--bg); border: 2px solid var(--line); border-radius: 14px; padding: 12px; max-height: 40vh; overflow-y: auto; }
+
+/* ---- 第一次：這支手機是誰的 ---- */
+#ownerSheet { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, transparent); z-index: 30; display: flex; align-items: center; justify-content: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); }
+.sheet { background: var(--paper); border: 2px solid var(--line); border-radius: 24px; padding: 24px 20px; width: 100%; max-width: 420px; }
+.sheet h2 { margin: 0 0 4px; font-size: 28px; font-weight: 900; text-wrap: balance; }
+.sheet p { margin: 0 0 16px; color: var(--muted); font-size: 18px; }
+#ownerList { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.owner-btn { border: 2px solid var(--ai); background: var(--paper); color: var(--ai); border-radius: 18px; min-height: 80px; font-size: 28px; font-weight: 900; }
+.owner-btn.on { background: var(--ai); color: var(--ai-ink); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="gut">
+    <h1>買菜記帳</h1>
+    <button type="button" class="owner" id="ownerBtn" aria-label="更換手機主人"><small>這是</small><span id="ownerName">—</span><small>的手機</small></button>
+  </header>
+  <nav class="tabs gut" role="tablist">
+    <button type="button" id="tab-talk" role="tab" aria-selected="true">說話記帳</button>
+    <button type="button" id="tab-book" role="tab" aria-selected="false">帳本<span class="badge" id="countBadge"></span></button>
+  </nav>
+
+  <section id="view-talk">
+    <div id="chat" class="gut" aria-live="polite"></div>
+    <div id="chips" class="gut"></div>
+    <div class="dock gut">
+      <button type="button" id="mic" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5" fill="currentColor" stroke="none"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/></svg>
+        <span id="micLabel">按一下　說話</span>
+      </button>
+      <form id="typeForm" autocomplete="off">
+        <input id="typeBox" type="text" inputmode="text" placeholder="也可以打字，例如：全聯買菜850" aria-label="打字記帳">
+        <button type="submit">送出</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="view-book" class="gut" hidden>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+      <input id="searchBox" type="search" placeholder="搜尋：全聯、阿姨、MOMO、10/26" aria-label="搜尋記帳" autocomplete="off">
+      <button type="button" id="searchClear" hidden aria-label="清除搜尋">清除</button>
+    </div>
+    <div id="ledgerList"></div>
+    <h2 class="sec-h">誰要給誰（全部記帳）</h2>
+    <div id="summary"></div>
+    <button type="button" class="share" id="shareBtn">把帳本傳給家人（LINE）</button>
+    <textarea id="copyBox" readonly hidden aria-label="帳本文字"></textarea>
+    <label class="setting" for="pause"><span>停多久才算說完</span>
+      <select id="pause"><option value="1.5">1.5 秒</option><option value="2.5">2.5 秒</option><option value="4">4 秒</option><option value="6">6 秒</option></select>
+    </label>
+    <p class="hint">說話時也可以再按一次紅色按鈕，馬上結束。帳本只存在這支手機裡，旅行結束前記得按上面的按鈕傳給家人備份。</p>
+  </section>
+</div>
+<div id="flash" hidden role="status"></div>
+
+<div id="exportSheet" hidden>
+  <div class="sheet export">
+    <h2>要傳哪一段？</h2>
+    <div id="rangeList" class="range-list"></div>
+    <div id="customRange" class="fld-row" hidden>
+      <label class="fld" for="rangeFrom"><span>從</span><input id="rangeFrom" type="date"></label>
+      <label class="fld" for="rangeTo"><span>到</span><input id="rangeTo" type="date"></label>
+    </div>
+    <p class="pv-h">會傳出這些內容：</p>
+    <pre id="exportPreview"></pre>
+    <div class="ed-acts">
+      <button type="button" id="exportSend" class="ed-save">傳到 LINE</button>
+      <button type="button" id="exportCancel" class="ed-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<div id="ownerSheet" hidden>
+  <div class="sheet">
+    <h2>這支手機是誰的？</h2>
+    <p>說「我」的時候，就會記在這個人身上。</p>
+    <div id="ownerList"></div>
+  </div>
+</div>
+
+<script>
+// ===== 句子理解（不用 AI，用規則） =====
+var DEFAULT_MEMBERS = [
+  { name: '阿母', alias: ['阿母', '媽媽', '老媽', '母親', '媽'] },
+  { name: '阿姐', alias: ['阿姐', '阿姊', '姐姐', '姊姊', '大姐', '姐', '姊'] },
+  { name: '阿弟', alias: ['阿弟', '弟弟', '小弟', '弟'] },
+  { name: '阿杯', alias: ['阿杯', '阿伯', '阿北', '阿爸', '爸爸', '老爸', '爸'] },
+  { name: '阿姨', alias: ['阿姨', '小阿姨', '姨'] }
+];
+
+var HOUSE = ['阿母', '阿姐', '阿弟']; // 「我們家」= 這三個人
+
+var CN_DIGIT = { '零': 0, '〇': 0, '一': 1, '二': 2, '兩': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 };
+var CN_UNIT = { '十': 10, '百': 100, '千': 1000 };
+
+function toHalfWidth(s) {
+  return s.replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); });
+}
+
+// 「兩千四」→2400、「一萬二」→12000、「三百五」→350、「2千4」→2400
+function cnToNum(raw) {
+  var s = raw.replace(/[,，]/g, '');
+  if (/^\d+$/.test(s)) return parseInt(s, 10);
+  var total = 0, section = 0, num = 0, lastUnit = 0, zero = false, digitRun = false;
+  for (var i = 0; i < s.length; i++) {
+    var ch = s[i];
+    if (/\d/.test(ch)) {
+      num = digitRun ? num * 10 + (+ch) : +ch; digitRun = true; continue;
+    }
+    digitRun = false;
+    if (ch === '零' || ch === '〇') { zero = true; continue; }
+    if (CN_DIGIT[ch] !== undefined) { num = CN_DIGIT[ch]; continue; }
+    if (CN_UNIT[ch]) {
+      var u = CN_UNIT[ch];
+      if (num === 0 && u === 10) num = 1;
+      section += num * u; num = 0; lastUnit = u; zero = false; continue;
+    }
+    if (ch === '萬' || ch === '万') {
+      section += num; total += section * 10000; section = 0; num = 0; lastUnit = 10000; zero = false; continue;
+    }
+  }
+  if (num > 0 && num < 10 && !zero && lastUnit >= 100) section += num * lastUnit / 10;
+  else section += num;
+  return total + section;
+}
+
+var NUM_CHARS = '0-9零〇一二兩两三四五六七八九十百千萬万,，';
+var COUNTER = '個|个|盒|瓶|包|張|人|杯|碗|份|件|罐|條|支|位|次|點|号|號|月|天|分|樣|袋|台|雙|片|顆|晚|間|歲|樓|站|起|下|些|直';
+var MONEY_UNIT = '元|塊錢|塊|圓|円|日幣|日圓|日元|台幣|新台幣';
+
+function findAmounts(text) {
+  var re = new RegExp('([' + NUM_CHARS + ']+)\\s*(' + MONEY_UNIT + '|' + COUNTER + ')?', 'g');
+  var out = [], m;
+  while ((m = re.exec(text))) {
+    var digits = m[1].replace(/^[,，]+|[,，]+$/g, '');
+    if (!digits) continue;
+    var unit = m[2] || '';
+    if (unit && new RegExp('^(' + COUNTER + ')$').test(unit)) {
+      // 「一千八四個人」：前面是金額，最後一個字是人數
+      if (digits.length >= 3 && /[十百千萬万]/.test(digits.slice(0, -1)) && CN_DIGIT[digits.slice(-1)] !== undefined) {
+        var pre = digits.slice(0, -1);
+        out.push({ value: cnToNum(pre), start: m.index, end: m.index + pre.length, unit: '' });
+      }
+      continue; // 兩個、四個人、三點
+    }
+    var v = cnToNum(digits);
+    if (!v) continue;
+    if (!unit && v < 10 && /^[一二兩两三四五六七八九十]$/.test(digits)) continue; // 「一起」「十分」這類
+    out.push({ value: v, start: m.index, end: m.index + m[0].length, unit: unit });
+  }
+  return out;
+}
+
+function memberAliases(members) {
+  var list = [];
+  members.forEach(function (mb) {
+    var al = (mb.alias && mb.alias.length) ? mb.alias : [mb.name];
+    if (al.indexOf(mb.name) < 0) al = [mb.name].concat(al);
+    al.forEach(function (a) { list.push({ a: a, name: mb.name }); });
+  });
+  list.sort(function (x, y) { return y.a.length - x.a.length; });
+  return list;
+}
+
+// 在句子裡找人名，回傳 [{name, start, end}]
+function findPeople(text, members, owner) {
+  var found = [];
+  var used = new Array(text.length).fill(false);
+  function mark(s, e) { for (var i = s; i < e; i++) used[i] = true; }
+  function free(s, e) { for (var i = s; i < e; i++) if (used[i]) return false; return true; }
+  ['我們家', '我家', '自己家'].forEach(function (g) {
+    var idx = -1;
+    while ((idx = text.indexOf(g, idx + 1)) >= 0) {
+      if (free(idx, idx + g.length)) { found.push({ name: '*HOUSE*', start: idx, end: idx + g.length }); mark(idx, idx + g.length); }
+    }
+  });
+  var groups = ['我們全部', '我們大家', '我們', '大家', '全部的人', '全部', '所有人', '五個人', '一起'];
+  groups.forEach(function (g) {
+    var idx = -1;
+    while ((idx = text.indexOf(g, idx + 1)) >= 0) {
+      if (free(idx, idx + g.length)) { found.push({ name: '*ALL*', start: idx, end: idx + g.length }); mark(idx, idx + g.length); }
+    }
+  });
+  memberAliases(members).forEach(function (x) {
+    var idx = -1;
+    while ((idx = text.indexOf(x.a, idx + 1)) >= 0) {
+      if (free(idx, idx + x.a.length)) { found.push({ name: x.name, start: idx, end: idx + x.a.length }); mark(idx, idx + x.a.length); }
+    }
+  });
+  ['自己', '我'].forEach(function (p) {
+    var idx = -1;
+    while ((idx = text.indexOf(p, idx + 1)) >= 0) {
+      if (free(idx, idx + p.length) && owner) { found.push({ name: owner, start: idx, end: idx + p.length, self: true }); mark(idx, idx + p.length); }
+    }
+  });
+  found.sort(function (a, b) { return a.start - b.start; });
+  return found;
+}
+
+var CATS = [
+  ['MOMO', ['momo', 'MOMO', 'Momo', 'MoMo', '摩摩', '莫莫', '摸摸', '網購']],
+  ['飲食', ['早餐', '午餐', '晚餐', '宵夜', '點心', '便當', '餐廳', '吃飯', '小吃', '外帶', '外送', '自助餐', '麵店', '牛肉麵', '雞排', '滷味', '鹹酥雞', '火鍋', '湯', '飲料', '咖啡', '奶茶', '珍奶', '手搖', '紅茶', '豆漿', '蛋餅', '飯糰', '蛋糕', '麵包', '吃', '喝', '餐', '麵']],
+  ['交通', ['計程車', '小黃', 'Uber', 'uber', '公車', '捷運', '高鐵', '台鐵', '火車', '客運', '車資', '車錢', '悠遊卡', '儲值', '加值', '加油', '油錢', '停車', '機車', '坐車', '搭車']],
+  ['買菜', ['買菜', '菜市場', '市場', '全聯', '家樂福', '大潤發', '好市多', '美廉社', '超市', '青菜', '蔬菜', '高麗菜', '菠菜', '地瓜葉', '空心菜', '蔥', '蒜', '薑', '蘿蔔', '番茄', '馬鈴薯', '洋蔥', '香菇', '豆腐', '雞蛋', '蛋', '豬肉', '牛肉', '雞肉', '絞肉', '排骨', '肉', '魚', '蝦', '水果', '香蕉', '蘋果', '芭樂', '橘子', '米', '油', '醬油', '菜']],
+  ['購物', ['衣服', '褲子', '鞋', '包包', '日用品', '衛生紙', '洗衣精', '洗碗精', '洗髮', '牙膏', '藥局', '藥', '屈臣氏', '康是美', '寶雅', '百貨', '禮物', '五金', '家電', '買']]
+];
+function guessCat(text) {
+  for (var i = 0; i < CATS.length; i++) {
+    for (var j = 0; j < CATS[i][1].length; j++) if (text.indexOf(CATS[i][1][j]) >= 0) return CATS[i][0];
+  }
+  return '其他';
+}
+
+var FILLERS = ['剛剛', '剛才', '方才', '今天', '昨天', '前天', '早上', '上午', '中午', '下午', '傍晚', '晚上', '現在', '那個', '這個', '然後', '還有', '總共', '一共', '大概', '差不多', '平分', '均分', '分攤', '出錢', '付錢', '付款', '刷卡', '現金', '買單', '請客', '塊錢', '日幣', '日圓', '日元', '台幣', '新台幣', '買了', '吃了', '喝了', '花了', '付了', '坐了', '搭了', '用了', '的錢', '一下',
+  '共', '買', '吃', '喝', '花', '付', '坐', '搭', '去', '用', '幫', '替', '給', '送', '跟', '和', '與', '還', '的', '了', '是', '在', '有', '嗯', '啊', '喔', '哦', '耶', '啦', '吧', '呢', '要', '先', '再', '元', '塊', '錢', '円', '圓', '各', '都', '就', '也', '出', '請', '墊'];
+
+function cleanItem(text) {
+  var t = text;
+  FILLERS.forEach(function (f) { t = t.split(f).join(' '); });
+  t = t.replace(/[，,。．.！!？?、:：；;$＄\s]+/g, ' ').replace(/NT/gi, ' ').trim();
+  // 去掉零散的單字
+  t = t.split(' ').filter(function (w) { return w.length > 0; }).join(' ');
+  return t;
+}
+
+function isYes(t) { return /^(對|是|好|沒錯|正確|可以|OK|ok|嗯|恩|是的|對的|對啊|好啊|好的|沒問題|就這樣|對對|記吧|記起來)/.test(t.replace(/\s/g, '')); }
+function isNo(t) { return /(不對|不是|錯了|錯|不要|不行|不正確|重來|重講|改一下|等一下)/.test(t.replace(/\s/g, '')); }
+
+// 把一句話拆成記帳欄位；沒聽到的欄位是 null
+function parseUtterance(text, members, owner, now) {
+  now = now || new Date();
+  var t = toHalfWidth(text).replace(/\s+/g, ' ').trim();
+  var r = { amount: null, cur: null, item: null, cat: null, payer: null, consumers: null, when: null, raw: text };
+
+  // 幣別
+  if (/新台幣|台幣|台币|NT/.test(t)) r.cur = 'TWD';
+  else if (/日幣|日圓|日元|円/.test(t)) r.cur = 'JPY';
+
+  // 金額
+  var amts = findAmounts(t);
+  var work = t;
+  if (amts.length) {
+    var withUnit = amts.filter(function (a) { return a.unit; });
+    var pick = withUnit.length ? withUnit : amts;
+    r.amount = pick.reduce(function (s, a) { return s + a.value; }, 0);
+    // 把金額從句子裡挖掉（倒著挖，位置才不會跑掉）
+    pick.slice().sort(function (a, b) { return b.start - a.start; }).forEach(function (a) {
+      work = work.slice(0, a.start) + ' ' + work.slice(a.end);
+    });
+  }
+
+  // 時間
+  var d = new Date(now.getTime());
+  var dayShift = /前天/.test(t) ? -2 : /昨天|昨晚/.test(t) ? -1 : 0;
+  var hour = null;
+  if (/早上|上午|早餐/.test(t)) hour = 9;
+  else if (/中午|午餐/.test(t)) hour = 12;
+  else if (/下午/.test(t)) hour = 15;
+  else if (/傍晚/.test(t)) hour = 17;
+  else if (/晚上|晚餐|昨晚|宵夜/.test(t)) hour = 19;
+  if (dayShift) { d.setDate(d.getDate() + dayShift); if (hour === null) hour = 12; }
+  if (hour !== null && (dayShift || hour < now.getHours())) { d.setHours(hour, 0, 0, 0); r.when = d.toISOString(); }
+  else if (dayShift) r.when = d.toISOString();
+
+  // 人
+  var people = findPeople(work, members, owner);
+  var all = members.map(function (m) { return m.name; });
+  var payerSpan = null;
+  people.forEach(function (p) {
+    var after = work.slice(p.end, p.end + 4);
+    var before = work.slice(Math.max(0, p.start - 1), p.start);
+    // 「阿姐買蛋糕」：名字後面直接接「買」，這個人就是付錢的人；「幫阿姐買」「跟阿姐買」不算
+    var buys = /^(先)?買/.test(after) && !/[幫替給送跟和與同]/.test(before);
+    if ((/^(先)?(付|出錢|出的|出|刷|墊|請客|請|買單)/.test(after) || buys) && p.name.charAt(0) !== '*') {
+      r.payer = p.name; payerSpan = p;
+    }
+  });
+  if (!r.payer && /我請|我買單|我出錢|我刷|我付/.test(work) && owner) r.payer = owner;
+  var cons = [];
+  var helpMode = /(幫|替|給|送)/.test(work);
+  people.forEach(function (p) {
+    if (p === payerSpan) return;
+    if (p.name === '*ALL*') { cons = all.slice(); return; }
+    if (p.name === '*HOUSE*') { HOUSE.forEach(function (n) { if (all.indexOf(n) >= 0 && cons.indexOf(n) < 0) cons.push(n); }); return; }
+    if (helpMode && p.self) {
+      // 「我幫阿姐買」：我是付錢的人，不是用的人
+      var after = work.slice(p.end, p.end + 2);
+      if (/^(幫|替|給|送|買|先)/.test(after)) { if (!r.payer) r.payer = p.name; return; }
+    }
+    if (cons.indexOf(p.name) < 0) cons.push(p.name);
+  });
+  people.forEach(function (p) {
+    if (p === payerSpan || p.self || p.name.charAt(0) === '*' || !owner) return;
+    if (/[跟和與同]$/.test(work.slice(Math.max(0, p.start - 1), p.start)) && cons.indexOf(owner) < 0) cons.push(owner);
+  });
+  if (cons.length) r.consumers = all.filter(function (n) { return cons.indexOf(n) >= 0; });
+
+  // 品項：拿掉人名、金額、贅字後剩下的
+  var itemText = work;
+  people.slice().sort(function (a, b) { return b.start - a.start; }).forEach(function (p) {
+    itemText = itemText.slice(0, p.start) + ' ' + itemText.slice(p.end);
+  });
+  var item = cleanItem(itemText);
+  if (/買菜/.test(t)) item = item.split(' ').map(function (w) { return w === '菜' ? '買菜' : w; }).join(' ');
+  if (item) r.item = item;
+  r.cat = guessCat(t);
+  return r;
+}
+
+// 最大餘數法平分（整數日圓，加總剛好等於總額）
+function splitEven(amount, n) {
+  var base = Math.floor(amount / n), rem = amount - base * n, out = [];
+  for (var i = 0; i < n; i++) out.push(base + (i < rem ? 1 : 0));
+  return out;
+}
+
+if (typeof module !== 'undefined') module.exports = { HOUSE: HOUSE, cnToNum: cnToNum, parseUtterance: parseUtterance, splitEven: splitEven, isYes: isYes, isNo: isNo, DEFAULT_MEMBERS: DEFAULT_MEMBERS };
+
+</script>
+<script>
+// ===== 畫面與對話流程 =====
+(function () {
+  var KEY = 'grocery-ledger-v1';
+  var HOME = '阿母'; // 沒特別說的時候：付錢的人、用的人都是阿母
+  var S = load();
+  function load() {
+    var d = null;
+    try { d = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+    d = d || {};
+    return {
+      members: d.members || DEFAULT_MEMBERS,
+      owner: d.owner || HOME,
+      entries: d.entries || [],
+      pause: d.pause || 2.5
+    };
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  function names() { return S.members.map(function (m) { return m.name; }); }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var chat = $('chat'), chips = $('chips');
+
+  // 機器人不出聲，只用文字顯示
+  function speak() {}
+
+  function bubble(who, text, cls) {
+    var b = document.createElement('div');
+    b.className = 'msg ' + who + (cls ? ' ' + cls : '');
+    b.textContent = text;
+    chat.appendChild(b);
+    chat.scrollTop = chat.scrollHeight;
+    return b;
+  }
+  function bot(text, say) { bubble('bot', text); if (say !== false) speak(text); }
+  function card(html) {
+    var b = document.createElement('div');
+    b.className = 'msg bot card';
+    b.innerHTML = html;
+    chat.appendChild(b);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function setChips(list, multi) {
+    chips.innerHTML = '';
+    var picked = [];
+    list.forEach(function (c) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chip' + (c.kind ? ' ' + c.kind : '');
+      btn.textContent = c.label;
+      btn.addEventListener('click', function () {
+        if (multi && c.toggle) {
+          var i = picked.indexOf(c.value);
+          if (i >= 0) { picked.splice(i, 1); btn.classList.remove('on'); }
+          else { picked.push(c.value); btn.classList.add('on'); }
+          return;
+        }
+        if (multi && c.done) { if (picked.length) c.onPick(picked.slice()); return; }
+        c.onPick(c.value);
+      });
+      chips.appendChild(btn);
+    });
+  }
+
+  // ---------- 記帳對話 ----------
+  var st = { mode: 'idle', draft: null, asking: null };
+
+  function fmt(amount, cur) {
+    var n = (amount || 0).toLocaleString('en-US');
+    return cur === 'JPY' ? '日幣 ' + n + ' 元' : n + ' 元';
+  }
+  function whoText(list) {
+    if (!list || !list.length) return '';
+    if (list.length === names().length && list.length > 1) return '大家平分';
+    var house = names().filter(function (n) { return HOUSE.indexOf(n) >= 0; });
+    if (list.length === house.length && house.every(function (n) { return list.indexOf(n) >= 0; })) return '我們家平分';
+    if (list.length === 2 && list.indexOf(S.owner) >= 0) return '和' + list.filter(function (n) { return n !== S.owner; })[0] + '平分';
+    if (list.length === 1) return list[0] + '的';
+    return list.join('、') + '平分';
+  }
+  function timeText(iso) {
+    var d = new Date(iso), now = new Date();
+    var day = d.toDateString() === now.toDateString() ? '今天' :
+      (new Date(now.getTime() - 864e5).toDateString() === d.toDateString() ? '昨天' : (d.getMonth() + 1) + '月' + d.getDate() + '日');
+    var h = d.getHours(), ap = h < 12 ? '上午' : (h < 18 ? '下午' : '晚上');
+    var hh = h % 12 === 0 ? 12 : h % 12, mm = d.getMinutes();
+    return day + ap + hh + '點' + (mm ? mm + '分' : '');
+  }
+
+  function merge(draft, r, onlySlot) {
+    ['amount', 'cur', 'item', 'payer', 'consumers', 'when'].forEach(function (k) {
+      if (r[k] !== null && r[k] !== undefined) {
+        if (onlySlot && onlySlot !== k && draft[k] !== null && draft[k] !== undefined) return;
+        draft[k] = r[k];
+      }
+    });
+    if (r.item && r.cat && r.cat !== '其他') draft.cat = r.cat;
+    else if (!draft.cat) draft.cat = r.cat || '其他';
+  }
+
+  function nextStep() {
+    var d = st.draft;
+    if (!d.amount) return ask('amount', '多少錢？');
+    if (!d.item && d.cat && d.cat !== '其他') d.item = d.cat;
+    if (d.item === '菜') d.item = '買菜';
+    if (!d.item) return ask('item', '買了什麼？');
+    if (!d.consumers || !d.consumers.length) d.consumers = [HOME];
+    if (!d.cur) d.cur = 'TWD';
+    if (!d.payer) d.payer = HOME;
+    if (!d.when) d.when = new Date().toISOString();
+    confirmDraft();
+  }
+
+  function ask(slot, q) {
+    st.mode = 'ask'; st.asking = slot;
+    bot(q);
+    if (slot === 'consumers') {
+      var list = [{ label: '我自己', value: [S.owner], onPick: answerPeople },
+        { label: '和阿姐平分', value: [S.owner, '阿姐'], onPick: answerPeople, kind: 'strong' },
+        { label: '和阿弟平分', value: [S.owner, '阿弟'], onPick: answerPeople, kind: 'strong' },
+        { label: '我們家平分', value: HOUSE.slice(), onPick: answerPeople, kind: 'strong' }];
+      names().filter(function (n) { return n !== S.owner; }).forEach(function (n) {
+        list.push({ label: n, value: [n], onPick: answerPeople });
+      });
+      setChips(list);
+    } else if (slot === 'payer') {
+      setChips(names().map(function (n) { return { label: n === S.owner ? n + '（我）' : n, value: n, onPick: function (v) { userSays(v + '付的', true); st.draft.payer = v; nextStep(); } }; }));
+    } else if (slot === 'cur') {
+      setChips([{ label: '日幣', value: 'JPY', onPick: function (v) { userSays('日幣', true); st.draft.cur = v; nextStep(); } },
+                { label: '台幣', value: 'TWD', onPick: function (v) { userSays('台幣', true); st.draft.cur = v; nextStep(); } }]);
+    } else setChips([{ label: '不記了', value: null, kind: 'quiet', onPick: cancelDraft }]);
+  }
+  function answerPeople(list) {
+    userSays(whoText(list), true);
+    st.draft.consumers = names().filter(function (n) { return list.indexOf(n) >= 0; });
+    nextStep();
+  }
+
+  function confirmDraft() {
+    var d = st.draft; st.mode = 'confirm';
+    var n = d.consumers.length, shares = splitEven(d.amount, n);
+    var each = n > 1 ? (shares[0] === shares[n - 1] ? '，每人 ' + fmt(shares[0], d.cur) : '，每人約 ' + fmt(shares[n - 1], d.cur)) : '';
+    var line = timeText(d.when) + '，' + d.item + ' ' + fmt(d.amount, d.cur) + '，' + whoText(d.consumers) + each + '，' + (d.payer === S.owner ? '我付的錢' : d.payer + '付的錢') + '。對嗎？';
+    card('<div class="cd-top"><span class="cat">' + esc(d.cat) + '</span><span class="cd-time">' + esc(timeText(d.when)) + '</span></div>' +
+      '<div class="cd-item">' + esc(d.item) + '</div>' +
+      '<div class="cd-amt">' + esc(fmt(d.amount, d.cur)) + '</div>' +
+      '<div class="cd-row"><span>誰的</span><b>' + esc(whoText(d.consumers)) + esc(each.replace('，', ' · ')) + '</b></div>' +
+      '<div class="cd-row"><span>誰付錢</span><b>' + esc(d.payer) + '</b></div>' +
+      '<div class="cd-q">對嗎？</div>');
+    speak(line);
+    setChips([{ label: '✓ 對，記起來', value: 1, kind: 'yes', onPick: function () { userSays('對', true); commit(); } },
+              { label: '✗ 不對', value: 0, kind: 'no', onPick: function () { userSays('不對', true); fixMenu(); } }]);
+  }
+
+  function fixMenu() {
+    st.mode = 'fix';
+    bot('哪裡要改？');
+    setChips([
+      { label: '金額', value: 'amount', onPick: fixSlot },
+      { label: '買什麼', value: 'item', onPick: fixSlot },
+      { label: '誰的', value: 'consumers', onPick: fixSlot },
+      { label: '誰付錢', value: 'payer', onPick: fixSlot },
+      { label: '全部重講', value: 'all', kind: 'quiet', onPick: fixSlot }
+    ]);
+  }
+  function fixSlot(slot) {
+    if (slot === 'all') { st.draft = null; st.mode = 'idle'; bot('好，請整句重講一次。'); setChips([]); return; }
+    var q = { amount: '多少錢？', item: '買了什麼？', consumers: '這筆是誰的？', payer: '誰付的錢？' }[slot];
+    st.draft[slot] = null;
+    ask(slot, q);
+  }
+
+  function commit() {
+    var d = st.draft;
+    var e = { id: Date.now().toString(36), when: d.when, amount: d.amount, cur: d.cur, item: d.item, cat: d.cat || '其他', payer: d.payer, consumers: d.consumers, raw: d.raws.join(' ／ '), by: S.owner };
+    S.entries.push(e); save();
+    st.draft = null; st.mode = 'idle';
+    bot('記好了。');
+    setChips([{ label: '取消剛剛這筆', value: e.id, kind: 'quiet', onPick: function (id) { removeEntry(id); bot('剛剛那筆刪掉了。'); setChips([]); } }]);
+    renderLedger();
+  }
+  function cancelDraft() { st.draft = null; st.mode = 'idle'; bot('好，這筆不記了。'); setChips([]); }
+
+  function removeEntry(id) {
+    S.entries = S.entries.filter(function (e) { return e.id !== id; }); save(); renderLedger();
+  }
+
+  function userSays(text, fromButton) { bubble('me', text, fromButton ? 'tap' : ''); }
+
+  function handle(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    userSays(text);
+    var compact = text.replace(/\s/g, '');
+
+    if (st.mode === 'confirm') {
+      if (isNo(compact)) return fixMenu();
+      if (isYes(compact)) return commit();
+      var r = parseUtterance(text, S.members, S.owner);
+      st.draft.raws.push(text);
+      merge(st.draft, r);
+      return nextStep();
+    }
+
+    if (st.mode === 'ask' || st.mode === 'fix') {
+      if (/^(不記了|算了|取消)/.test(compact)) return cancelDraft();
+      var slot = st.asking, r2 = parseUtterance(text, S.members, S.owner);
+      st.draft.raws.push(text);
+      if (slot === 'item' && !r2.item) r2.item = compact;
+      if (slot === 'consumers' && !r2.consumers && /我|自己/.test(compact)) r2.consumers = [S.owner];
+      if (slot === 'payer') {
+        var pp = r2.payer || (r2.consumers && r2.consumers[0]);
+        if (pp) { st.draft.payer = pp; return nextStep(); }
+      }
+      if (slot === 'cur') {
+        if (/台/.test(compact)) { st.draft.cur = 'TWD'; return nextStep(); }
+        if (/日/.test(compact)) { st.draft.cur = 'JPY'; return nextStep(); }
+      }
+      merge(st.draft, r2);
+      if (!st.draft[slot]) {
+        var again = { amount: '我沒聽到金額，請再說一次，例如「三百五」。', item: '請再說一次買了什麼，例如「青菜」。', consumers: '請再說一次是誰的，可以點下面的名字。', payer: '請點下面誰付的錢。', cur: '請點日幣或台幣。' }[slot];
+        bot(again);
+        return;
+      }
+      return nextStep();
+    }
+
+    // 待命中：先看是不是指令
+    if (/(刪掉|刪除|取消|不要).*(剛剛|上一筆|那筆|剛才)/.test(compact) || /^(刪掉|取消)$/.test(compact)) {
+      var last = S.entries[S.entries.length - 1];
+      if (!last) { bot('目前沒有記帳。'); return; }
+      bot('要刪掉「' + last.item + ' ' + fmt(last.amount, last.cur) + '」嗎？');
+      setChips([{ label: '刪掉', value: last.id, kind: 'no', onPick: function (id) { userSays('刪掉', true); removeEntry(id); bot('刪掉了。'); setChips([]); } },
+                { label: '不要刪', value: 0, kind: 'quiet', onPick: function () { userSays('不要刪', true); bot('好，留著。'); setChips([]); } }]);
+      return;
+    }
+    if (/(花了多少|花多少|共多少|總共多少|用了多少)/.test(compact)) {
+      var r3 = parseUtterance(text, S.members, S.owner);
+      if (!r3.amount) { bot(todaySummary()); setChips([]); return; }
+    }
+
+    var r4 = parseUtterance(text, S.members, S.owner);
+    if (!r4.amount && !r4.item && !r4.consumers) {
+      bot('我沒聽懂。可以這樣說：「全聯買菜八百五」或「跟阿姨吃午餐六百，阿姨付的」。');
+      return;
+    }
+    st.draft = { amount: null, cur: null, item: null, cat: null, payer: null, consumers: null, when: null, raws: [text] };
+    merge(st.draft, r4);
+    nextStep();
+  }
+
+  function todaySummary() {
+    var today = new Date().toDateString(), me = S.owner, jp = 0, tw = 0;
+    S.entries.forEach(function (e) {
+      if (new Date(e.when).toDateString() !== today) return;
+      var i = e.consumers.indexOf(me); if (i < 0) return;
+      var share = splitEven(e.amount, e.consumers.length)[i];
+      if (e.cur === 'JPY') jp += share; else tw += share;
+    });
+    if (!jp && !tw) return '今天還沒有' + me + '的花費。';
+    return '今天' + me + '花了 ' + (tw ? fmt(tw, 'TWD') : '') + (jp && tw ? '，另外 ' : '') + (jp ? fmt(jp, 'JPY') : '') + '。';
+  }
+
+  // ---------- 語音輸入 ----------
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  // 語音輸入：整個頁面只用「同一個」語音辨識，不重複新開（iPhone 每新開一個可能就要再問一次權限）。
+  // 自己計時：只要還有聽到聲音就繼續等；安靜超過設定的秒數才算說完。
+  // iPhone 有時會自己提早停，這時用同一個辨識接著再聽（最多 3 次），前面聽到的字會留著。
+  var rec = null, listening = false, live = null;
+  var kept = '', current = '', silenceTimer = null, startedAt = 0, lastHeard = 0, stopping = false, hadError = false, restarts = 0;
+  var MAX_MS = 40000, MAX_RESTARTS = 3;
+  var mic = $('mic'), micLabel = $('micLabel');
+
+  function setMic(state) {
+    // state: 'off' | 'prep' | 'ready' | 'hearing'
+    listening = state !== 'off';
+    mic.classList.toggle('on', state === 'ready' || state === 'hearing');
+    mic.classList.toggle('prep', state === 'prep');
+    mic.setAttribute('aria-pressed', listening ? 'true' : 'false');
+    micLabel.textContent = { off: '按一下　說話', prep: '準備中…請稍等', ready: '請說話', hearing: '聽到了…說完再按一下' }[state];
+  }
+  function heardText() { return (kept + current).trim(); }
+  function showLive() {
+    var t = heardText();
+    if (!t) return;
+    if (!live) live = bubble('me', t, 'live'); else live.textContent = t;
+    chat.scrollTop = chat.scrollHeight;
+  }
+  function armSilence() {
+    clearTimeout(silenceTimer);
+    var wait = heardText() ? S.pause * 1000 : Math.max(8000, S.pause * 1000); // 還沒開口前多等一點
+    silenceTimer = setTimeout(finishListen, wait);
+  }
+  function finishListen() {
+    if (!listening) return;
+    stopping = true;
+    clearTimeout(silenceTimer);
+    try { rec.stop(); } catch (e) { endListen(); }
+  }
+  function endListen() {
+    clearTimeout(silenceTimer);
+    setMic('off');
+    var t = heardText();
+    if (live) { live.remove(); live = null; }
+    kept = ''; current = '';
+    if (t) handle(t);
+    else if (!hadError) bot('沒有聽到聲音。請等按鈕變成「請說話」再開口，說大聲一點。');
+  }
+
+  var ERR = {
+    'not-allowed': '麥克風權限被拒絕了。請在 Safari 網址列左邊按「大小」→「網站設定」→ 麥克風選「允許」。',
+    'service-not-allowed': 'iPhone 的語音辨識沒打開。請到「設定 → 一般 → 鍵盤」打開「啟用聽寫」，也確認「設定 → Siri」可以使用。',
+    'network': '語音辨識需要網路，現在連不上。可以先在下面打字。',
+    'audio-capture': '抓不到麥克風。可能有別的 APP（例如通話、錄音）正在用麥克風，關掉後再試。',
+    'language-not-supported': '這支手機不支援國語語音辨識。'
+  };
+
+  function getRec() {
+    if (rec) return rec;
+    rec = new SR();
+    rec.lang = 'zh-TW'; rec.interimResults = true; rec.continuous = true; rec.maxAlternatives = 1;
+    rec.onaudiostart = function () { if (listening && !heardText()) setMic('ready'); };
+    rec.onstart = function () { if (listening && !heardText()) setMic('ready'); };
+    rec.onspeechstart = function () { if (listening) setMic('hearing'); };
+    rec.onresult = function (ev) {
+      var t = '';
+      for (var i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+      current = t;
+      lastHeard = Date.now();
+      setMic('hearing');
+      showLive();
+      armSilence();
+    };
+    rec.onerror = function (ev) {
+      if (ev.error === 'no-speech' || ev.error === 'aborted') return; // 交給 onend 處理
+      hadError = true; stopping = true;
+      bot(ERR[ev.error] || ('語音出了問題（' + ev.error + '），請再按一次試試，或在下面打字。'));
+    };
+    rec.onend = function () {
+      if (!listening) return;
+      if (!stopping && restarts < MAX_RESTARTS && Date.now() - startedAt < MAX_MS) {
+        kept = heardText() ? heardText() + ' ' : '';
+        current = '';
+        var quietFor = Date.now() - (lastHeard || startedAt);
+        if (quietFor < S.pause * 1000 || !kept) {
+          restarts++;
+          try { rec.start(); return; } catch (e) {}
+        }
+      }
+      endListen();
+    };
+    return rec;
+  }
+
+  function startListen() {
+    if (!S.owner) { showOwner(); return; }
+    if (!SR) {
+      bot('這個瀏覽器不能用語音。請用 iPhone 的 Safari 打開，或在下面打字。');
+      $('typeBox').focus();
+      return;
+    }
+    if (listening) { finishListen(); return; } // 再按一次 = 說完了
+    kept = ''; current = ''; live = null; stopping = false; hadError = false; restarts = 0;
+    startedAt = Date.now(); lastHeard = 0;
+    setMic('prep');
+    try { getRec().start(); armSilence(); }
+    catch (e) {
+      // 上一次還沒完全停下來：先停，再開
+      try { rec.abort(); } catch (x) {}
+      setTimeout(function () { try { rec.start(); armSilence(); } catch (x) { setMic('off'); bot('麥克風開不起來，請再按一次。'); } }, 300);
+    }
+  }
+  mic.addEventListener('click', startListen);
+
+  $('typeForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var v = $('typeBox').value; $('typeBox').value = '';
+    if (!S.owner) { showOwner(); return; }
+    handle(v);
+  });
+
+  // ---------- 這支手機是誰的 ----------
+  function showOwner() {
+    var box = $('ownerList'); box.innerHTML = '';
+    names().forEach(function (n) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'owner-btn' + (S.owner === n ? ' on' : ''); b.textContent = n;
+      b.addEventListener('click', function () {
+        S.owner = n; save(); $('ownerSheet').hidden = true; $('ownerName').textContent = n;
+        renderLedger();
+        if (!chat.children.length) greet();
+      });
+      box.appendChild(b);
+    });
+    $('ownerSheet').hidden = false;
+  }
+  function greet() {
+    bot(S.owner + '您好。按下面的紅色按鈕說話，例如「全聯買菜八百五」。沒說是誰的，就記在阿母身上。', false);
+  }
+  $('ownerBtn').addEventListener('click', showOwner);
+
+  // ---------- 帳本 ----------
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function balances(cur, entries) {
+    var b = {}; names().forEach(function (n) { b[n] = { paid: 0, used: 0 }; });
+    (entries || S.entries).filter(function (e) { return (e.cur || 'TWD') === cur; }).forEach(function (e) {
+      if (!b[e.payer]) b[e.payer] = { paid: 0, used: 0 };
+      b[e.payer].paid += e.amount;
+      var sh = splitEven(e.amount, e.consumers.length);
+      e.consumers.forEach(function (c, i) { if (!b[c]) b[c] = { paid: 0, used: 0 }; b[c].used += sh[i]; });
+    });
+    return b;
+  }
+  // 結算：每一筆都是「用的人欠付錢的人」，同兩個人之間互相抵銷。這樣家人看得懂是哪幾筆來的。
+  function settle(cur, entries) {
+    var owe = {};
+    (entries || S.entries).filter(function (e) { return (e.cur || 'TWD') === cur; }).forEach(function (e) {
+      var sh = splitEven(e.amount, e.consumers.length);
+      e.consumers.forEach(function (c, i) {
+        if (c === e.payer) return;
+        var k = c + '>' + e.payer; owe[k] = (owe[k] || 0) + sh[i];
+      });
+    });
+    var out = [], done = {};
+    Object.keys(owe).forEach(function (k) {
+      if (done[k]) return;
+      var p = k.split('>'), back = p[1] + '>' + p[0];
+      done[k] = done[back] = 1;
+      var net = owe[k] - (owe[back] || 0);
+      if (net > 0) out.push({ from: p[0], to: p[1], v: net });
+      else if (net < 0) out.push({ from: p[1], to: p[0], v: -net });
+    });
+    var order = names();
+    out.sort(function (x, y) { return order.indexOf(x.from) - order.indexOf(y.from) || order.indexOf(x.to) - order.indexOf(y.to); });
+    return out;
+  }
+
+  var editingId = null;
+  var CAT_LIST = ['飲食', '買菜', '購物', '交通', 'MOMO', '其他'];
+
+  function pad(n) { return ('0' + n).slice(-2); }
+  function toLocalInput(iso) { var d = new Date(iso); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+
+  // 搜尋：品項、分類、人名、金額、日期（例如 12/28、12月28日）、原本說的話都可以找
+  function matches(e, q) {
+    if (!q) return true;
+    var d = new Date(e.when);
+    var hay = [e.item, e.cat, e.payer + '付', whoText(e.consumers), e.consumers.join(' '), e.raw,
+      String(e.amount), e.amount.toLocaleString('en-US'), e.cur === 'JPY' ? '日幣 日圓' : '台幣',
+      (d.getMonth() + 1) + '/' + d.getDate(), (d.getMonth() + 1) + '月' + d.getDate() + '日'].join(' ');
+    return q.split(/\s+/).filter(Boolean).every(function (w) { return hay.indexOf(w) >= 0; });
+  }
+
+  function renderLedger() {
+    var list = $('ledgerList'); list.innerHTML = '';
+    var q = ($('searchBox').value || '').trim();
+    var sorted = S.entries.slice().sort(function (a, b) { return b.when < a.when ? -1 : 1; });
+    var shown = sorted.filter(function (e) { return matches(e, q) || e.id === editingId; });
+    $('countBadge').textContent = S.entries.length ? S.entries.length : '';
+    $('searchClear').hidden = !q;
+    if (!sorted.length) {
+      list.innerHTML = '<p class="empty">還沒有記帳。回到「說話記帳」，按紅色按鈕說一句話就會出現在這裡。</p>';
+    } else if (!shown.length) {
+      list.innerHTML = '<p class="empty">找不到「' + esc(q) + '」。可以試試品名、人名、金額或日期（例如 12/28）。</p>';
+    }
+    if (q && shown.length) {
+      var jp = 0, tw = 0;
+      shown.forEach(function (e) { if (e.cur === 'JPY') jp += e.amount; else tw += e.amount; });
+      var p = document.createElement('p'); p.className = 'found';
+      p.textContent = '找到 ' + shown.length + ' 筆，共 ' + [tw ? fmt(tw, 'TWD') : '', jp ? fmt(jp, 'JPY') : ''].filter(Boolean).join('、');
+      list.appendChild(p);
+    }
+    var lastDay = '';
+    shown.forEach(function (e) {
+      var d = new Date(e.when), day = (d.getMonth() + 1) + '月' + d.getDate() + '日';
+      if (day !== lastDay) { var h = document.createElement('h3'); h.className = 'day'; h.textContent = day; list.appendChild(h); lastDay = day; }
+      list.appendChild(e.id === editingId ? editRow(e) : viewRow(e, d));
+    });
+    renderSummary();
+  }
+
+  function viewRow(e, d) {
+    var row = document.createElement('div'); row.className = 'entry';
+    var hh = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    row.innerHTML = '<div class="e-main"><div class="e-item"><span class="cat sm">' + esc(e.cat) + '</span>' + esc(e.item) + '</div>' +
+      '<div class="e-meta">' + hh + ' · ' + esc(whoText(e.consumers)) + ' · ' + esc(e.payer) + '付</div></div>' +
+      '<div class="e-amt">' + esc(fmt(e.amount, e.cur)) + '</div>' +
+      '<div class="e-acts"><button type="button" class="e-edit">修改</button><button type="button" class="e-del">刪除</button></div>';
+    row.querySelector('.e-edit').addEventListener('click', function () { editingId = e.id; renderLedger(); });
+    var del = row.querySelector('.e-del');
+    del.addEventListener('click', function () {
+      if (del.dataset.armed) { removeEntry(e.id); return; }
+      del.dataset.armed = '1'; del.textContent = '確定刪？'; del.classList.add('armed');
+      setTimeout(function () { if (del.isConnected) { delete del.dataset.armed; del.textContent = '刪除'; del.classList.remove('armed'); } }, 3000);
+    });
+    return row;
+  }
+
+  function editRow(e) {
+    var f = document.createElement('form'); f.className = 'entry editing'; f.setAttribute('autocomplete', 'off');
+    var pid = 'ed-' + e.id;
+    var catOpts = CAT_LIST.map(function (c) { return '<option' + (c === e.cat ? ' selected' : '') + '>' + c + '</option>'; }).join('');
+    var payOpts = names().map(function (n) { return '<option' + (n === e.payer ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('');
+    var people = names().map(function (n) {
+      return '<button type="button" class="pick' + (e.consumers.indexOf(n) >= 0 ? ' on' : '') + '" data-name="' + esc(n) + '" aria-pressed="' + (e.consumers.indexOf(n) >= 0) + '">' + esc(n) + '</button>';
+    }).join('');
+    f.innerHTML =
+      '<label class="fld" for="' + pid + '-item"><span>買什麼</span><input id="' + pid + '-item" name="itemName" value="' + esc(e.item) + '" required></label>' +
+      '<div class="fld-row">' +
+        '<label class="fld" for="' + pid + '-amt"><span>金額</span><input id="' + pid + '-amt" name="amount" type="number" inputmode="numeric" min="1" step="1" value="' + e.amount + '" required></label>' +
+        '<label class="fld narrow" for="' + pid + '-cur"><span>幣別</span><select id="' + pid + '-cur" name="cur"><option value="TWD"' + (e.cur !== 'JPY' ? ' selected' : '') + '>台幣</option><option value="JPY"' + (e.cur === 'JPY' ? ' selected' : '') + '>日幣</option></select></label>' +
+      '</div>' +
+      '<div class="fld"><span>誰的（可以選好幾個，平分）</span><div class="picks">' + people + '</div></div>' +
+      '<div class="fld-row">' +
+        '<label class="fld" for="' + pid + '-pay"><span>誰付錢</span><select id="' + pid + '-pay" name="payer">' + payOpts + '</select></label>' +
+        '<label class="fld" for="' + pid + '-cat"><span>分類</span><select id="' + pid + '-cat" name="cat">' + catOpts + '</select></label>' +
+      '</div>' +
+      '<label class="fld" for="' + pid + '-when"><span>時間</span><input id="' + pid + '-when" name="when" type="datetime-local" value="' + toLocalInput(e.when) + '" required></label>' +
+      '<p class="ed-err" hidden></p>' +
+      '<div class="ed-acts"><button type="submit" class="ed-save">儲存</button><button type="button" class="ed-cancel">取消</button></div>';
+    Array.prototype.forEach.call(f.querySelectorAll('.pick'), function (b) {
+      b.addEventListener('click', function () {
+        var on = !b.classList.contains('on');
+        b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    });
+    f.querySelector('.ed-cancel').addEventListener('click', function () { editingId = null; renderLedger(); });
+    f.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var err = f.querySelector('.ed-err');
+      var item = f.querySelector('[name=itemName]').value.trim();
+      var amount = parseInt(f.querySelector('[name=amount]').value, 10);
+      var cons = Array.prototype.filter.call(f.querySelectorAll('.pick'), function (b) { return b.classList.contains('on'); }).map(function (b) { return b.dataset.name; });
+      var when = new Date(f.querySelector('[name=when]').value);
+      var problem = !item ? '請填買了什麼。' : !(amount > 0) ? '金額要是大於 0 的整數。' : !cons.length ? '請至少選一個人。' : isNaN(when) ? '請填時間。' : '';
+      if (problem) { err.textContent = problem; err.hidden = false; return; }
+      e.item = item; e.amount = amount; e.cur = f.querySelector('[name=cur]').value; e.consumers = cons;
+      e.payer = f.querySelector('[name=payer]').value; e.cat = f.querySelector('[name=cat]').value; e.when = when.toISOString();
+      e.edited = new Date().toISOString();
+      save(); editingId = null; renderLedger(); flash('改好了。');
+    });
+    setTimeout(function () { try { f.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (x) {} }, 0);
+    return f;
+  }
+
+  function renderSummary() {
+    var sum = $('summary'); sum.innerHTML = '';
+    ['TWD', 'JPY'].forEach(function (cur) {
+      if (!S.entries.some(function (e) { return (e.cur || 'TWD') === cur; })) return;
+      var b = balances(cur), t = settle(cur);
+      var html = '<div class="sum-block"><h3>' + (cur === 'JPY' ? '日幣' : '台幣') + '</h3><table><thead><tr><th>人</th><th>花費</th><th>付出</th></tr></thead><tbody>';
+      names().forEach(function (n) { html += '<tr><td>' + esc(n) + '</td><td>' + b[n].used.toLocaleString('en-US') + '</td><td>' + b[n].paid.toLocaleString('en-US') + '</td></tr>'; });
+      html += '</tbody></table>';
+      html += t.length ? '<ul class="settle">' + t.map(function (x) { return '<li><b>' + esc(x.from) + '</b> 要給 <b>' + esc(x.to) + '</b> ' + esc(fmt(x.v, cur)) + '</li>'; }).join('') + '</ul>' : '<p class="even">大家剛好扯平。</p>';
+      sum.innerHTML += html + '</div>';
+    });
+  }
+
+  // ---------- 傳到 LINE：選區間 ----------
+  var range = { kind: 'all', ym: null, from: '', to: '' };
+  function ymOf(iso) { var d = new Date(iso); return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
+  function dateOf(iso) { var d = new Date(iso); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function months() {
+    var seen = {};
+    S.entries.forEach(function (e) { seen[ymOf(e.when)] = 1; });
+    return Object.keys(seen).sort().reverse();
+  }
+  function ymLabel(ym) {
+    var y = +ym.slice(0, 4), m = +ym.slice(5);
+    return (y === new Date().getFullYear() ? '' : y + '年') + m + '月';
+  }
+  function inRange(e) {
+    if (range.kind === 'month') return ymOf(e.when) === range.ym;
+    if (range.kind === 'custom') {
+      var d = dateOf(e.when);
+      return (!range.from || d >= range.from) && (!range.to || d <= range.to);
+    }
+    return true;
+  }
+  function rangeLabel() {
+    if (range.kind === 'month') return ymLabel(range.ym);
+    if (range.kind === 'custom') {
+      var f = range.from ? range.from.slice(5).replace('-', '/') : '最早', t = range.to ? range.to.slice(5).replace('-', '/') : '最近';
+      return f + '～' + t;
+    }
+    return '全部';
+  }
+
+  function exportText() {
+    var list = S.entries.filter(inRange).sort(function (a, b) { return a.when < b.when ? -1 : 1; });
+    var lines = ['【' + (S.owner || '') + '的買菜記帳】' + rangeLabel()];
+    if (!list.length) { lines.push('這段時間沒有記帳。'); return lines.join('\n'); }
+    list.forEach(function (e) {
+      var d = new Date(e.when);
+      lines.push((d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '｜' + e.item + '｜' + fmt(e.amount, e.cur) + '｜' + whoText(e.consumers) + '｜' + e.payer + '付');
+    });
+    ['TWD', 'JPY'].forEach(function (cur) {
+      var sub = list.filter(function (e) { return (e.cur || 'TWD') === cur; });
+      if (!sub.length) return;
+      var total = sub.reduce(function (s, e) { return s + e.amount; }, 0);
+      var b = balances(cur, sub), t = settle(cur, sub);
+      lines.push('', '━━━━━━━━━━');
+      lines.push('總花費' + (cur === 'JPY' ? '（日幣）' : '') + '：' + fmt(total, cur) + '（' + sub.length + ' 筆）');
+      var used = names().filter(function (n) { return b[n].used; }).map(function (n) { return n + ' ' + b[n].used.toLocaleString('en-US'); });
+      if (used.length) lines.push('每人花費：' + used.join('、'));
+      lines.push('分帳結論：');
+      if (t.length) t.forEach(function (x) { lines.push('・' + x.from + '要給' + x.to + ' ' + fmt(x.v, cur)); });
+      else lines.push('・大家剛好扯平，不用互相給錢');
+    });
+    return lines.join('\n');
+  }
+
+  function renderExport() {
+    var box = $('rangeList'); box.innerHTML = '';
+    var opts = [{ kind: 'all', label: '全部' }].concat(months().map(function (ym) { return { kind: 'month', ym: ym, label: ymLabel(ym) }; })).concat([{ kind: 'custom', label: '自己選日期' }]);
+    opts.forEach(function (o) {
+      var b = document.createElement('button'); b.type = 'button';
+      var on = range.kind === o.kind && (o.kind !== 'month' || range.ym === o.ym);
+      b.className = 'chip' + (on ? ' on' : ''); b.textContent = o.label; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.addEventListener('click', function () { range.kind = o.kind; range.ym = o.ym || null; renderExport(); });
+      box.appendChild(b);
+    });
+    $('customRange').hidden = range.kind !== 'custom';
+    $('exportPreview').textContent = exportText();
+  }
+  $('rangeFrom').addEventListener('change', function () { range.from = $('rangeFrom').value; renderExport(); });
+  $('rangeTo').addEventListener('change', function () { range.to = $('rangeTo').value; renderExport(); });
+
+  $('shareBtn').addEventListener('click', function () {
+    if (!S.entries.length) { flash('還沒有記帳可以傳。'); return; }
+    var m = months();
+    if (range.kind === 'month' && m.indexOf(range.ym) < 0) range.kind = 'all';
+    renderExport();
+    $('exportSheet').hidden = false;
+  });
+  $('exportCancel').addEventListener('click', function () { $('exportSheet').hidden = true; });
+  $('exportSend').addEventListener('click', function () {
+    var text = exportText();
+    if (navigator.share) {
+      navigator.share({ title: '買菜記帳', text: text }).then(function () { $('exportSheet').hidden = true; }, function () {});
+      return;
+    }
+    $('exportSheet').hidden = true;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function () { flash('已複製，貼到 LINE 就可以傳出去。'); }, function () { showCopyBox(text); });
+    } else showCopyBox(text);
+  });
+  function showCopyBox(text) { var t = $('copyBox'); t.hidden = false; t.value = text; t.select(); flash('請長按上面的文字，選「拷貝」。'); }
+  function flash(msg) { var f = $('flash'); f.textContent = msg; f.hidden = false; clearTimeout(flash.t); flash.t = setTimeout(function () { f.hidden = true; }, 3500); }
+
+  // ---------- 分頁 ----------
+  function tab(which) {
+    ['talk', 'book'].forEach(function (w) {
+      $('view-' + w).hidden = w !== which;
+      $('tab-' + w).setAttribute('aria-selected', w === which ? 'true' : 'false');
+    });
+    if (which === 'book') renderLedger();
+  }
+  $('tab-talk').addEventListener('click', function () { tab('talk'); });
+  $('tab-book').addEventListener('click', function () { tab('book'); });
+
+  $('pause').value = String(S.pause);
+  $('pause').addEventListener('change', function () { S.pause = parseFloat($('pause').value); save(); flash('好，停 ' + S.pause + ' 秒才算說完。'); });
+
+  $('searchBox').addEventListener('input', function () { editingId = null; renderLedger(); });
+  $('searchClear').addEventListener('click', function () { $('searchBox').value = ''; renderLedger(); $('searchBox').focus(); });
+
+  // 啟動
+  renderLedger();
+  if (S.owner) { $('ownerName').textContent = S.owner; greet(); } else showOwner();
+})();
+
+</script>
+</body>
+</html>

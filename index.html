@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>家裡的記帳</title>
+<style>
+:root { --bg: #eef1f6; --paper: #ffffff; --ink: #18212e; --muted: #566274; --line: #d3d9e3; --a: #23407a; --b: #cf3b22; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root { --bg: #11161f; --paper: #1b2330; --ink: #eef2f7; --muted: #a3afc0; --line: #2d3848; --a: #5d85d6; --b: #f06a4f; color-scheme: dark; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: "PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif; }
+main { max-width: 520px; margin: 0 auto; padding: calc(32px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 30px; margin: 0 0 8px; }
+a { display: block; text-decoration: none; background: var(--paper); border: 2px solid var(--line); border-left: 10px solid var(--a); border-radius: 20px; padding: 20px; color: var(--ink); }
+a.travel { border-left-color: var(--b); }
+a b { display: block; font-size: 28px; }
+a span { color: var(--muted); font-size: 18px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>家裡的記帳</h1>
+  <a href="grocery/"><b>買菜記帳</b><span>阿母平常用，台幣</span></a>
+  <a href="travel/" class="travel"><b>旅行記帳</b><span>出國用，日幣</span></a>
+</main>
+</body>
+</html>
