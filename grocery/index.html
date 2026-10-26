@@ -99,21 +99,27 @@ header h1 { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: .04em;
 .chip.quiet { border-color: var(--line); color: var(--muted); }
 
 .dock { border-top: 2px solid var(--line); background: var(--bg); padding-block: 14px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 10px; }
-#mic {
+#talkBtn {
   width: 100%; min-height: 96px; border: 0; border-radius: 28px; background: var(--mic); color: var(--mic-ink);
   display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 28px; font-weight: 900; letter-spacing: .06em;
   box-shadow: 0 6px 0 color-mix(in srgb, var(--mic) 60%, #000);
   transition: transform .1s;
 }
-#mic:active { transform: translateY(3px); box-shadow: 0 3px 0 color-mix(in srgb, var(--mic) 60%, #000); }
-#mic svg { width: 44px; height: 44px; flex: none; }
+#talkBtn:active { transform: translateY(3px); box-shadow: 0 3px 0 color-mix(in srgb, var(--mic) 60%, #000); }
+#talkBtn svg { width: 44px; height: 44px; flex: none; }
+#mic { width: 100%; min-height: 52px; border: 2px solid var(--line); background: var(--paper); color: var(--muted); border-radius: 16px; font-size: 18px; font-weight: 700; }
+#mic.on { background: var(--mic); border-color: var(--mic); color: var(--mic-ink); }
 #mic.on { animation: pulse 1.2s ease-in-out infinite; }
-#mic.prep { filter: saturate(.35) brightness(.95); }
+#mic.prep { background: var(--tint); color: var(--ink); }
 @keyframes pulse { 50% { filter: brightness(1.18); } }
 @media (prefers-reduced-motion: reduce) { #mic.on { animation: none; outline: 4px solid var(--ink); } }
-#typeForm { width: 100%; display: flex; gap: 8px; }
-#typeBox { flex: 1; min-width: 0; font: inherit; font-size: 18px; padding: 10px 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--paper); color: var(--ink); }
-#typeForm button { border: 2px solid var(--line); background: var(--paper); border-radius: 14px; padding: 0 16px; font-size: 18px; font-weight: 700; }
+#compose { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.dict-hint { margin: 0; text-align: center; font-size: 21px; font-weight: 700; line-height: 1.5; }
+.dict-hint small { font-size: 16px; color: var(--muted); font-weight: 500; }
+.dict-hint .key { display: inline-flex; vertical-align: -6px; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 8px; background: var(--paper); border: 2px solid var(--ink); }
+.dict-hint .key svg { width: 22px; height: 22px; }
+#typeBox { width: 100%; font: inherit; font-size: 24px; line-height: 1.4; padding: 12px 14px; border-radius: 16px; border: 3px solid var(--ai); background: var(--paper); color: var(--ink); resize: none; min-height: 3.6em; }
+.compose-acts { display: flex; gap: 10px; }
 
 /* ---- 帳本 ---- */
 #view-book { flex: 1; overflow-y: auto; padding-block: 4px calc(24px + env(safe-area-inset-bottom, 0px)); }
@@ -173,6 +179,10 @@ td { text-align: right; padding: 6px 0; border-top: 1px solid var(--line); font-
 .pv-h { margin: 4px 0 0 !important; font-size: 16px !important; }
 #exportPreview { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font); font-size: 16px; line-height: 1.55; background: var(--bg); border: 2px solid var(--line); border-radius: 14px; padding: 12px; max-height: 40vh; overflow-y: auto; }
 
+/* ---- 麥克風檢查 ---- */
+.diag-btn { width: 100%; margin-top: 18px; border: 2px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 16px; padding: 12px; font-size: 19px; font-weight: 700; }
+#diag { margin: 10px 0 0; white-space: pre-wrap; word-break: break-all; font-size: 14px; line-height: 1.5; background: var(--paper); border: 2px solid var(--line); border-radius: 12px; padding: 10px; font-family: ui-monospace, Menlo, monospace; }
+
 /* ---- 第一次：這支手機是誰的 ---- */
 #ownerSheet { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, transparent); z-index: 30; display: flex; align-items: center; justify-content: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); }
 .sheet { background: var(--paper); border: 2px solid var(--line); border-radius: 24px; padding: 24px 20px; width: 100%; max-width: 420px; }
@@ -198,14 +208,16 @@ td { text-align: right; padding: 6px 0; border-top: 1px solid var(--line); font-
     <div id="chat" class="gut" aria-live="polite"></div>
     <div id="chips" class="gut"></div>
     <div class="dock gut">
-      <button type="button" id="mic" aria-pressed="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5" fill="currentColor" stroke="none"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/></svg>
-        <span id="micLabel">按一下　說話</span>
-      </button>
-      <form id="typeForm" autocomplete="off">
-        <input id="typeBox" type="text" inputmode="text" placeholder="也可以打字，例如：全聯買菜850" aria-label="打字記帳">
-        <button type="submit">送出</button>
+      <form id="compose" autocomplete="off" hidden>
+        <p class="dict-hint">按鍵盤上的 <span class="key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5" fill="currentColor" stroke="none"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/></svg></span> 就可以用說的<br><small>說完按「送出」</small></p>
+        <textarea id="typeBox" rows="2" enterkeyhint="send" placeholder="例如：全聯買菜八百五" aria-label="要記的帳"></textarea>
+        <div class="compose-acts">
+          <button type="submit" class="ed-save">送出</button>
+          <button type="button" id="composeCancel" class="ed-cancel">收起來</button>
+        </div>
       </form>
+      <button type="button" id="talkBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5" fill="currentColor" stroke="none"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/></svg><span>按這裡說話</span></button>
+      <button type="button" id="mic" aria-pressed="false"><span id="micLabel">快速語音（有時不穩）</span></button>
     </div>
   </section>
 
@@ -223,6 +235,8 @@ td { text-align: right; padding: 6px 0; border-top: 1px solid var(--line); font-
     <label class="setting" for="pause"><span>停多久才算說完</span>
       <select id="pause"><option value="1.5">1.5 秒</option><option value="2.5">2.5 秒</option><option value="4">4 秒</option><option value="6">6 秒</option></select>
     </label>
+    <button type="button" class="diag-btn" id="diagBtn">麥克風檢查</button>
+    <pre id="diag" hidden></pre>
     <p class="hint">說話時也可以再按一次紅色按鈕，馬上結束。帳本只存在這支手機裡，旅行結束前記得按上面的按鈕傳給家人備份。</p>
   </section>
 </div>
@@ -766,13 +780,16 @@ if (typeof module !== 'undefined') module.exports = { HOUSE: HOUSE, cnToNum: cnT
   var MAX_MS = 40000, MAX_RESTARTS = 3;
   var mic = $('mic'), micLabel = $('micLabel');
 
+  var micState = 'off', watchdog = null;
   function setMic(state) {
     // state: 'off' | 'prep' | 'ready' | 'hearing'
+    micState = state;
+    if (state !== 'prep') clearTimeout(watchdog);
     listening = state !== 'off';
     mic.classList.toggle('on', state === 'ready' || state === 'hearing');
     mic.classList.toggle('prep', state === 'prep');
     mic.setAttribute('aria-pressed', listening ? 'true' : 'false');
-    micLabel.textContent = { off: '按一下　說話', prep: '準備中…請稍等', ready: '請說話', hearing: '聽到了…說完再按一下' }[state];
+    micLabel.textContent = { off: '快速語音（有時不穩）', prep: '準備中…請稍等', ready: '請說話（說完再按一下）', hearing: '聽到了…說完再按一下' }[state];
   }
   function heardText() { return (kept + current).trim(); }
   function showLive() {
@@ -799,7 +816,7 @@ if (typeof module !== 'undefined') module.exports = { HOUSE: HOUSE, cnToNum: cnT
     if (live) { live.remove(); live = null; }
     kept = ''; current = '';
     if (t) handle(t);
-    else if (!hadError) bot('沒有聽到聲音。請等按鈕變成「請說話」再開口，說大聲一點。');
+    else if (!hadError) bot('快速語音沒有聽到。請改按紅色的「按這裡說話」，用鍵盤上的麥克風說。');
   }
 
   var ERR = {
@@ -850,14 +867,21 @@ if (typeof module !== 'undefined') module.exports = { HOUSE: HOUSE, cnToNum: cnT
   function startListen() {
     if (!S.owner) { showOwner(); return; }
     if (!SR) {
-      bot('這個瀏覽器不能用語音。請用 iPhone 的 Safari 打開，或在下面打字。');
-      $('typeBox').focus();
+      bot('這個瀏覽器不能用快速語音。請改按紅色的「按這裡說話」。');
       return;
     }
     if (listening) { finishListen(); return; } // 再按一次 = 說完了
     kept = ''; current = ''; live = null; stopping = false; hadError = false; restarts = 0;
     startedAt = Date.now(); lastHeard = 0;
     setMic('prep');
+    clearTimeout(watchdog);
+    watchdog = setTimeout(function () {
+      if (micState !== 'prep') return;
+      stopping = true; hadError = true;
+      try { rec.abort(); } catch (e) {}
+      setMic('off');
+      bot('快速語音沒有開起來。請改按紅色的「按這裡說話」，用鍵盤上的麥克風說。');
+    }, 5000);
     try { getRec().start(); armSilence(); }
     catch (e) {
       // 上一次還沒完全停下來：先停，再開
@@ -867,12 +891,90 @@ if (typeof module !== 'undefined') module.exports = { HOUSE: HOUSE, cnToNum: cnT
   }
   mic.addEventListener('click', startListen);
 
-  $('typeForm').addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    var v = $('typeBox').value; $('typeBox').value = '';
+  // ---------- 麥克風檢查（給遠端除錯用） ----------
+  function runDiag() {
+    var out = $('diag'), t0 = Date.now();
+    out.hidden = false; out.textContent = '';
+    function add(s) { out.textContent += s + '\n'; }
+    function ms() { return ((Date.now() - t0) / 1000).toFixed(1) + '秒 '; }
+    var ua = navigator.userAgent || '';
+    var ios = (ua.match(/OS (\d+)_(\d+)/) || []);
+    add('iOS 版本：' + (ios[1] ? ios[1] + '.' + ios[2] : '看不出來'));
+    var app = /Line\//i.test(ua) ? 'LINE 內建瀏覽器' : /CriOS/.test(ua) ? 'Chrome' : /FxiOS/.test(ua) ? 'Firefox' : /FBAN|FBAV|Instagram/.test(ua) ? 'FB/IG 內建瀏覽器' : (/Safari/.test(ua) ? 'Safari' : '其他');
+    add('瀏覽器：' + app + (navigator.standalone ? '（從主畫面打開）' : ''));
+    add('支援語音辨識：' + (SR ? '是' : '否'));
+    add('網址：' + location.protocol + '//' + location.host);
+    add('網路：' + (navigator.onLine ? '有' : '沒有'));
+    add('—— 第一步：開麥克風（請在跳出的視窗按允許）');
+    var step2 = function () {
+      if (!SR) { add('—— 這個瀏覽器不能語音辨識，檢查結束'); return; }
+      add('—— 第二步：語音辨識測試，請現在說「測試一二三」');
+      var r;
+      try { r = new SR(); } catch (e) { add(ms() + '建立失敗：' + e.message); return; }
+      r.lang = 'zh-TW'; r.interimResults = true; r.continuous = false;
+      ['start', 'audiostart', 'soundstart', 'speechstart', 'speechend', 'audioend'].forEach(function (n) {
+        r['on' + n] = function () { add(ms() + n); };
+      });
+      r.onresult = function (ev) { var s = ''; for (var i = 0; i < ev.results.length; i++) s += ev.results[i][0].transcript; add(ms() + '聽到：' + s); };
+      r.onerror = function (ev) { add(ms() + '錯誤：' + ev.error + (ERR[ev.error] ? '\n  → ' + ERR[ev.error] : '')); };
+      r.onend = function () { add(ms() + 'end（檢查結束，請截圖）'); };
+      try { r.start(); add(ms() + '已呼叫開始'); } catch (e) { add(ms() + '開始失敗：' + e.message); }
+      setTimeout(function () { try { r.stop(); } catch (e) {} }, 8000);
+    };
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+        add(ms() + '麥克風：可以使用');
+        s.getTracks().forEach(function (tr) { tr.stop(); });
+        setTimeout(step2, 400);
+      }, function (e) {
+        add(ms() + '麥克風：不能用（' + e.name + '）');
+        setTimeout(step2, 400);
+      });
+    } else { add('麥克風：這個瀏覽器不支援'); step2(); }
+  }
+  $('diagBtn').addEventListener('click', function () { if (listening) finishListen(); runDiag(); });
+
+  // ---------- 主要方式：iPhone 鍵盤的聽寫 ----------
+  function openCompose() {
     if (!S.owner) { showOwner(); return; }
+    if (listening) finishListen();
+    $('compose').hidden = false; $('talkBtn').hidden = true; $('mic').hidden = true;
+    $('typeBox').focus(); // 一定要在按鈕的點擊裡呼叫，iPhone 才會跳出鍵盤
+    fitViewport();
+  }
+  function closeCompose() {
+    $('compose').hidden = true; $('talkBtn').hidden = false; $('mic').hidden = false;
+    $('typeBox').blur();
+  }
+  function sendCompose() {
+    var v = $('typeBox').value.trim();
+    if (!v) { $('typeBox').focus(); return; }
+    $('typeBox').value = '';
     handle(v);
+    $('typeBox').focus(); // 鍵盤留著，機器人追問時可以直接再說
+  }
+  $('talkBtn').addEventListener('click', openCompose);
+  $('composeCancel').addEventListener('click', closeCompose);
+  $('compose').addEventListener('submit', function (ev) { ev.preventDefault(); sendCompose(); });
+  $('typeBox').addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); sendCompose(); }
   });
+  // 點選按鈕回答時，把鍵盤收起來
+  chips.addEventListener('click', function () { if (!$('compose').hidden && !$('typeBox').value.trim()) closeCompose(); });
+
+  // 鍵盤跳出來時，讓整個畫面縮到鍵盤上方，輸入框才不會被擋住
+  function fitViewport() {
+    var vv = window.visualViewport;
+    if (!vv) return;
+    document.documentElement.style.height = vv.height + 'px';
+    document.body.style.height = vv.height + 'px';
+    window.scrollTo(0, 0);
+    chat.scrollTop = chat.scrollHeight;
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fitViewport);
+    window.visualViewport.addEventListener('scroll', function () { window.scrollTo(0, 0); });
+  }
 
   // ---------- 這支手機是誰的 ----------
   function showOwner() {
@@ -890,7 +992,7 @@ if (typeof module !== 'undefined') module.exports = { HOUSE: HOUSE, cnToNum: cnT
     $('ownerSheet').hidden = false;
   }
   function greet() {
-    bot(S.owner + '您好。按下面的紅色按鈕說話，例如「全聯買菜八百五」。沒說是誰的，就記在阿母身上。', false);
+    bot(S.owner + '您好。按下面紅色的「按這裡說話」，再按鍵盤上的麥克風就能用說的，例如「全聯買菜八百五」。沒說是誰的，就記在阿母身上。', false);
   }
   $('ownerBtn').addEventListener('click', showOwner);
 
